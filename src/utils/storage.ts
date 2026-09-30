@@ -1,6 +1,28 @@
 import { LeadData } from '../types';
 
 const LEADS_STORAGE_KEY = 'ai_arena_stall_leads_v1';
+const WEBHOOK_STORAGE_KEY = 'ai_arena_webhook_url';
+const ORGANIZER_PHONE_KEY = 'ai_arena_organizer_phone';
+
+export function getWebhookUrl(): string {
+  if (typeof window === 'undefined') return '';
+  return localStorage.getItem(WEBHOOK_STORAGE_KEY) || '';
+}
+
+export function setWebhookUrl(url: string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(WEBHOOK_STORAGE_KEY, url.trim());
+}
+
+export function getOrganizerPhone(): string {
+  if (typeof window === 'undefined') return '';
+  return localStorage.getItem(ORGANIZER_PHONE_KEY) || '';
+}
+
+export function setOrganizerPhone(phone: string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(ORGANIZER_PHONE_KEY, phone.trim());
+}
 
 export function getStoredLeads(): LeadData[] {
   if (typeof window === 'undefined') return [];
@@ -14,22 +36,132 @@ export function getStoredLeads(): LeadData[] {
   }
 }
 
-export function saveLead(lead: LeadData): void {
+/**
+ * Sync with server /api/leads (works in Vercel Serverless and Vite Dev)
+ */
+export async function syncLeadsWithServer(): Promise<LeadData[]> {
+  const localLeads = getStoredLeads();
+  try {
+    const response = await fetch('/api/leads', {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && Array.isArray(data.leads)) {
+        // Merge server leads with local leads (de-duplicate by ID or name+phone)
+        const combined = [...data.leads];
+        localLeads.forEach((local) => {
+          const alreadyInServer = combined.some(
+            (s) =>
+              s.id === local.id ||
+              (s.whatsappNumber === local.whatsappNumber && s.fullName === local.fullName)
+          );
+          if (!alreadyInServer) {
+            combined.push(local);
+            // Push missing local lead to server in background
+            fetch('/api/leads', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(local)
+            }).catch(() => {});
+          }
+        });
+
+        // Sort descending by creation timestamp
+        combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        localStorage.setItem(LEADS_STORAGE_KEY, JSON.stringify(combined));
+        return combined;
+      }
+    }
+  } catch (err) {
+    // If backend /api/leads is unreachable or offline, fallback to local storage
+    console.warn('API leads sync notice:', err);
+  }
+
+  return localLeads;
+}
+
+export async function saveLead(lead: LeadData): Promise<void> {
+  // 1. Save locally for instant UI update & offline guarantee
   try {
     const leads = getStoredLeads();
-    const updated = [lead, ...leads];
-    localStorage.setItem(LEADS_STORAGE_KEY, JSON.stringify(updated));
+    const exists = leads.some(
+      (l) =>
+        l.id === lead.id ||
+        (l.whatsappNumber === lead.whatsappNumber && l.fullName === lead.fullName)
+    );
+    if (!exists) {
+      const updated = [lead, ...leads];
+      localStorage.setItem(LEADS_STORAGE_KEY, JSON.stringify(updated));
+    }
   } catch (err) {
-    console.error('Failed to save lead', err);
+    console.error('Failed to save lead locally', err);
+  }
+
+  // 2. Dispatch to /api/leads (Serverless on Vercel or Express dev)
+  try {
+    fetch('/api/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(lead)
+    }).catch((err) => console.warn('Could not post to /api/leads', err));
+  } catch {
+    // Ignore fetch failure
+  }
+
+  // 3. Dispatch to Custom Webhook / Google Sheets if configured
+  const webhook = getWebhookUrl();
+  if (webhook) {
+    try {
+      fetch(webhook, {
+        method: 'POST',
+        mode: 'no-cors', // Supports Google Apps Script without CORS blocks
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(lead)
+      }).catch((err) => console.warn('Could not dispatch to webhook', err));
+    } catch {
+      // Ignore webhook failure
+    }
   }
 }
 
-export function clearStoredLeads(): void {
+export async function clearStoredLeads(): Promise<void> {
   try {
     localStorage.removeItem(LEADS_STORAGE_KEY);
   } catch (err) {
-    console.error('Failed to clear leads', err);
+    console.error('Failed to clear local leads', err);
   }
+
+  try {
+    await fetch('/api/leads', { method: 'DELETE' });
+  } catch {
+    // Ignore server error
+  }
+}
+
+export function importLeadFromCode(code: string): boolean {
+  try {
+    const parsed = JSON.parse(code);
+    if (parsed && parsed.fullName && parsed.whatsappNumber) {
+      saveLead(parsed);
+      return true;
+    }
+  } catch {
+    // Try base64 decoded
+    try {
+      const decoded = atob(code);
+      const parsed = JSON.parse(decoded);
+      if (parsed && parsed.fullName && parsed.whatsappNumber) {
+        saveLead(parsed);
+        return true;
+      }
+    } catch {
+      return false;
+    }
+  }
+  return false;
 }
 
 export function exportLeadsToCSV(leads: LeadData[]): void {
@@ -113,4 +245,12 @@ export function seedDemoLeads(): void {
   ];
 
   localStorage.setItem(LEADS_STORAGE_KEY, JSON.stringify(sampleLeads));
+  // Post sample leads to API as well
+  sampleLeads.forEach((l) => {
+    fetch('/api/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(l)
+    }).catch(() => {});
+  });
 }

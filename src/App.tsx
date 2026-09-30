@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { AppStage, LeadData, Persona } from './types';
 import { QUESTIONS } from './data/questions';
 import { determinePersona, PERSONAS } from './data/personas';
-import { getStoredLeads, saveLead } from './utils/storage';
+import { getStoredLeads, saveLead, syncLeadsWithServer } from './utils/storage';
 import { sounds } from './utils/audio';
 
 import { TopNav } from './components/TopNav';
@@ -30,14 +30,31 @@ export default function App() {
   const [leadsList, setLeadsList] = useState<LeadData[]>([]);
   const [isSoundMuted, setIsSoundMuted] = useState(false);
 
-  // Sync leads from storage on mount
-  const refreshLeads = useCallback(() => {
-    setLeadsList(getStoredLeads());
+  // Sync leads from server & storage
+  const refreshLeads = useCallback(async () => {
+    // 1. Immediately load local leads to prevent blank counter
+    const local = getStoredLeads();
+    setLeadsList(local);
+
+    // 2. Fetch fresh leads from server and update
+    try {
+      const serverLeads = await syncLeadsWithServer();
+      setLeadsList(serverLeads);
+    } catch {
+      // Keep local
+    }
   }, []);
 
   useEffect(() => {
     refreshLeads();
     setIsSoundMuted(sounds.isMuted());
+
+    // Live background polling so attendees submitting on their phones appear on this screen in real-time
+    const interval = setInterval(() => {
+      refreshLeads();
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, [refreshLeads]);
 
   // Restart / Reset for Next Stall Player

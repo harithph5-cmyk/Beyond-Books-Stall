@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { ArrowDown, Check, Copy, RotateCcw, Share2, Sparkles, Star } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowDown, Check, Copy, RotateCcw, Share2, Sparkles, Star, QrCode, X, MessageSquare } from 'lucide-react';
+import QRCode from 'qrcode';
 import { Persona, LeadData } from '../types';
 import { sounds } from '../utils/audio';
+import { getOrganizerPhone } from '../utils/storage';
 import { PersonaIllustration } from './PersonaIllustrations';
 
 interface RoadmapScreenProps {
@@ -16,6 +18,31 @@ export const RoadmapScreen: React.FC<RoadmapScreenProps> = ({
   onReset
 }) => {
   const [copied, setCopied] = useState(false);
+  const [showPassModal, setShowPassModal] = useState(false);
+  const [passQrUrl, setPassQrUrl] = useState('');
+  const [organizerPhone, setOrganizerPhone] = useState('');
+
+  useEffect(() => {
+    setOrganizerPhone(getOrganizerPhone());
+  }, []);
+
+  useEffect(() => {
+    if (showPassModal && leadData) {
+      const payload = JSON.stringify({
+        fullName: leadData.fullName,
+        whatsappNumber: leadData.whatsappNumber,
+        college: leadData.college,
+        department: leadData.department,
+        yearOfStudy: leadData.yearOfStudy,
+        careerInterest: leadData.careerInterest,
+        personaName: persona.name,
+        createdAt: leadData.createdAt
+      });
+      QRCode.toDataURL(payload, { width: 260, margin: 2 })
+        .then((url) => setPassQrUrl(url))
+        .catch(() => {});
+    }
+  }, [showPassModal, leadData, persona]);
 
   // Recommended direction can incorporate their chosen interest if available
   const recommendedDirection =
@@ -211,29 +238,67 @@ export const RoadmapScreen: React.FC<RoadmapScreenProps> = ({
 
       {/* Primary CTA (Page 7): 📲 GET MY ROADMAP ON WHATSAPP */}
       <div className="space-y-4 text-center">
-        <button
-          onClick={handleOpenWhatsApp}
-          className="group w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 sm:px-12 py-4 sm:py-5 rounded-xl text-lg sm:text-xl font-extrabold text-black bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 shadow-[0_0_35px_rgba(16,185,129,0.4)] hover:shadow-[0_0_50px_rgba(16,185,129,0.65)] transform hover:-translate-y-0.5 transition-all cursor-pointer"
-        >
-          <span className="text-2xl">📲</span>
-          <span>GET MY ROADMAP ON WHATSAPP</span>
-        </button>
+        {/* Real-time synchronization check */}
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-xs mb-2">
+          <Check className="w-3.5 h-3.5" />
+          <span>LEAD DISPATCHED TO BOOTH VAULT</span>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <button
+            onClick={handleOpenWhatsApp}
+            className="group w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 sm:px-10 py-4 rounded-xl text-base sm:text-lg font-extrabold text-black bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 shadow-[0_0_35px_rgba(16,185,129,0.4)] hover:shadow-[0_0_50px_rgba(16,185,129,0.65)] transform hover:-translate-y-0.5 transition-all cursor-pointer"
+          >
+            <span className="text-xl">📲</span>
+            <span>GET ROADMAP ON WHATSAPP</span>
+          </button>
+
+          {/* Optional Direct Confirmation to Stall Desk */}
+          {organizerPhone && (
+            <button
+              onClick={() => {
+                sounds.playSelect();
+                const text = encodeURIComponent(
+                  `👋 Hi Stall Coordinator! I just completed the AI Arena test at your booth.\n\nName: ${leadData?.fullName || ''}\nPersona: ${persona.name}\nCollege: ${leadData?.college || ''}`
+                );
+                const phone = organizerPhone.replace(/[^0-9]/g, '');
+                window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${text}`, '_blank');
+              }}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl text-xs sm:text-sm font-bold bg-neutral-900 border border-emerald-500/40 text-emerald-400 hover:bg-neutral-850 hover:border-emerald-400 transition-colors"
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span>Confirm with Stall Coordinator</span>
+            </button>
+          )}
+        </div>
 
         {/* Secondary Actions for Stall Environment */}
-        <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+        <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
+          {/* Show Booth Pass QR */}
+          <button
+            onClick={() => {
+              sounds.playClick();
+              setShowPassModal(true);
+            }}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-neutral-900 border border-cyan-500/40 text-xs font-semibold text-cyan-300 hover:bg-neutral-850 hover:border-cyan-400 transition-colors"
+          >
+            <QrCode className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Show Booth Pass (QR)</span>
+          </button>
+
           <button
             onClick={handleCopy}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-neutral-900 border border-neutral-800 text-xs font-medium text-neutral-300 hover:text-white hover:border-neutral-700 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-neutral-900 border border-neutral-800 text-xs font-medium text-neutral-300 hover:text-white hover:border-neutral-700 transition-colors"
           >
             {copied ? (
               <>
                 <Check className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-emerald-400">Copied to Clipboard!</span>
+                <span className="text-emerald-400">Copied!</span>
               </>
             ) : (
               <>
                 <Copy className="w-3.5 h-3.5 text-neutral-400" />
-                <span>Copy Text Roadmap</span>
+                <span>Copy Roadmap</span>
               </>
             )}
           </button>
@@ -252,10 +317,10 @@ export const RoadmapScreen: React.FC<RoadmapScreenProps> = ({
                 handleCopy();
               }
             }}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-neutral-900 border border-neutral-800 text-xs font-medium text-neutral-300 hover:text-white hover:border-neutral-700 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-neutral-900 border border-neutral-800 text-xs font-medium text-neutral-300 hover:text-white hover:border-neutral-700 transition-colors"
           >
             <Share2 className="w-3.5 h-3.5 text-neutral-400" />
-            <span>Share Result</span>
+            <span>Share</span>
           </button>
 
           {/* Next Stall Player Reset */}
@@ -266,17 +331,69 @@ export const RoadmapScreen: React.FC<RoadmapScreenProps> = ({
                 onReset();
               }
             }}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/20 transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Next Player (Reset)</span>
+            <span>Next Player</span>
           </button>
         </div>
 
-        <p className="text-xs text-neutral-500 pt-2 font-mono">
-          Lead securely saved to AI Arena stall database · Ready for next attendee
+        <p className="text-[11px] text-neutral-500 pt-2 font-mono">
+          Lead synchronized with AI Arena /api/leads · Show pass at stall if offline
         </p>
       </div>
+
+      {/* Attendee Booth Pass QR Modal */}
+      {showPassModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-xs bg-neutral-900 border border-neutral-800 rounded-2xl p-6 text-center shadow-2xl">
+            <button
+              onClick={() => setShowPassModal(false)}
+              className="absolute top-3 right-3 p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <span className="text-[10px] font-mono uppercase tracking-widest text-cyan-400 block mb-1">
+              OFFLINE BOOTH VERIFICATION
+            </span>
+            <h3 className="text-base font-bold text-white font-display mb-1">
+              Attendee Booth Pass
+            </h3>
+            <p className="text-xs text-neutral-400 mb-4">
+              Show this QR code to the stall coordinator to scan or confirm your entry!
+            </p>
+
+            <div className="p-3 bg-white rounded-xl inline-block shadow-[0_0_20px_rgba(6,182,212,0.25)] mb-4">
+              {passQrUrl ? (
+                <img src={passQrUrl} alt="Booth Pass QR" className="w-48 h-48 mx-auto" />
+              ) : (
+                <div className="w-48 h-48 flex items-center justify-center bg-neutral-100">
+                  <QrCode className="w-8 h-8 text-neutral-400 animate-pulse" />
+                </div>
+              )}
+            </div>
+
+            <div className="bg-neutral-950 p-2.5 rounded-lg border border-neutral-800 text-[11px] font-mono text-neutral-300 text-left space-y-0.5 mb-3">
+              <div><strong className="text-white">Name:</strong> {leadData?.fullName}</div>
+              <div><strong className="text-white">Phone:</strong> {leadData?.whatsappNumber}</div>
+              <div><strong className="text-white">Persona:</strong> {persona.name}</div>
+            </div>
+
+            <button
+              onClick={() => {
+                if (leadData) {
+                  navigator.clipboard.writeText(JSON.stringify(leadData));
+                  alert('Pass code copied! You can paste this in the stall coordinator vault.');
+                }
+              }}
+              className="w-full py-2 rounded-lg bg-neutral-800 text-xs font-semibold text-neutral-200 hover:text-white"
+            >
+              Copy Pass Text Code
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
