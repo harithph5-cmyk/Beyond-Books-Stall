@@ -6,7 +6,7 @@ interface TopNavProps {
   onOpenLeads: () => void;
   onOpenQr: () => void;
   onReset: () => void;
-  leadCount: number;
+  leadCount?: number;
   isSoundMuted: boolean;
   onToggleSound: () => void;
   stage: string;
@@ -16,7 +16,6 @@ export const TopNav: React.FC<TopNavProps> = ({
   onOpenLeads,
   onOpenQr,
   onReset,
-  leadCount,
   isSoundMuted,
   onToggleSound,
   stage
@@ -145,19 +144,19 @@ export const TopNav: React.FC<TopNavProps> = ({
             <Maximize2 className="w-4 h-4" />
           </button>
 
-          {/* Lead Manager Vault (Password Protected) */}
+          {/* Organizer Google Form Responses Hub (Password Protected) */}
           <button
             onClick={() => {
               sounds.playClick();
               onOpenLeads();
             }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500/50 transition-colors shadow-[0_0_10px_rgba(16,185,129,0.1)] cursor-pointer"
-            title="Stall Lead Vault (Password Protected)"
+            title="Google Form Responses & Stall Organizer Desk"
           >
             <Lock className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden sm:inline">Leads</span>
+            <span className="hidden sm:inline">Responses</span>
             <span className="font-mono bg-emerald-500/20 px-1.5 py-0.5 rounded text-[11px] font-bold text-emerald-300">
-              {leadCount}
+              Live
             </span>
           </button>
         </div>

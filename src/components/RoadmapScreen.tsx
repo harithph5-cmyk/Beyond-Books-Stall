@@ -3,7 +3,7 @@ import { ArrowDown, Check, Copy, RotateCcw, Share2, Sparkles, Star, QrCode, X, M
 import QRCode from 'qrcode';
 import { Persona, LeadData } from '../types';
 import { sounds } from '../utils/audio';
-import { getOrganizerPhone } from '../utils/storage';
+import { getOrganizerPhone, FORMATTED_CONTACT_PHONE, getWhatsAppContactUrl } from '../utils/storage';
 import { PersonaIllustration } from './PersonaIllustrations';
 
 interface RoadmapScreenProps {
@@ -241,7 +241,7 @@ export const RoadmapScreen: React.FC<RoadmapScreenProps> = ({
         {/* Real-time synchronization check */}
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-xs mb-2">
           <Check className="w-3.5 h-3.5" />
-          <span>LEAD DISPATCHED TO BOOTH VAULT</span>
+          <span>OFFICIAL STALL REGISTRATION VERIFIED</span>
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -253,23 +253,18 @@ export const RoadmapScreen: React.FC<RoadmapScreenProps> = ({
             <span>GET ROADMAP ON WHATSAPP</span>
           </button>
 
-          {/* Optional Direct Confirmation to Stall Desk */}
-          {organizerPhone && (
-            <button
-              onClick={() => {
-                sounds.playSelect();
-                const text = encodeURIComponent(
-                  `👋 Hi Stall Coordinator! I just completed the AI Arena test at your booth.\n\nName: ${leadData?.fullName || ''}\nPersona: ${persona.name}\nCollege: ${leadData?.college || ''}`
-                );
-                const phone = organizerPhone.replace(/[^0-9]/g, '');
-                window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${text}`, '_blank');
-              }}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl text-xs sm:text-sm font-bold bg-neutral-900 border border-emerald-500/40 text-emerald-400 hover:bg-neutral-850 hover:border-emerald-400 transition-colors"
-            >
-              <MessageSquare className="w-4 h-4" />
-              <span>Confirm with Stall Coordinator</span>
-            </button>
-          )}
+          {/* Direct WhatsApp Contact to Stall Coordinator */}
+          <button
+            onClick={() => {
+              sounds.playSelect();
+              const text = `👋 Hi Stall Coordinator! I just completed the AI Arena test at your booth.\n\n👤 Name: ${leadData?.fullName || 'Participant'}\n✨ Persona: ${persona.name} ${persona.emoji}\n🏛️ College: ${leadData?.college || ''}`;
+              window.open(getWhatsAppContactUrl(text), '_blank');
+            }}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl text-xs sm:text-sm font-bold bg-neutral-900 border border-emerald-500/40 text-emerald-400 hover:bg-neutral-850 hover:border-emerald-400 transition-colors cursor-pointer"
+          >
+            <MessageSquare className="w-4 h-4" />
+            <span>WhatsApp Coordinator ({FORMATTED_CONTACT_PHONE})</span>
+          </button>
         </div>
 
         {/* Secondary Actions for Stall Environment */}
@@ -339,7 +334,7 @@ export const RoadmapScreen: React.FC<RoadmapScreenProps> = ({
         </div>
 
         <p className="text-[11px] text-neutral-500 pt-2 font-mono">
-          Lead synchronized with AI Arena /api/leads · Show pass at stall if offline
+          Registration recorded in Official Google Form · Show pass at stall desk
         </p>
       </div>
 

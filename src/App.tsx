@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'motion/react';
 import { AppStage, LeadData, Persona } from './types';
 import { QUESTIONS } from './data/questions';
 import { determinePersona, PERSONAS } from './data/personas';
-import { getStoredLeads, saveLead, syncLeadsWithServer } from './utils/storage';
+import { saveCurrentParticipant, FORMATTED_CONTACT_PHONE, getWhatsAppContactUrl } from './utils/storage';
 import { sounds } from './utils/audio';
 
 import { TopNav } from './components/TopNav';
@@ -27,35 +27,11 @@ export default function App() {
   // Stall Organizer Modals & Sound
   const [isLeadsModalOpen, setIsLeadsModalOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
-  const [leadsList, setLeadsList] = useState<LeadData[]>([]);
   const [isSoundMuted, setIsSoundMuted] = useState(false);
 
-  // Sync leads from server & storage
-  const refreshLeads = useCallback(async () => {
-    // 1. Immediately load local leads to prevent blank counter
-    const local = getStoredLeads();
-    setLeadsList(local);
-
-    // 2. Fetch fresh leads from server and update
-    try {
-      const serverLeads = await syncLeadsWithServer();
-      setLeadsList(serverLeads);
-    } catch {
-      // Keep local
-    }
-  }, []);
-
   useEffect(() => {
-    refreshLeads();
     setIsSoundMuted(sounds.isMuted());
-
-    // Live background polling so attendees submitting on their phones appear on this screen in real-time
-    const interval = setInterval(() => {
-      refreshLeads();
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [refreshLeads]);
+  }, []);
 
   // Restart / Reset for Next Stall Player
   const handleReset = () => {
@@ -94,8 +70,8 @@ export default function App() {
     }
   };
 
-  // Lead form submission
-  const handleSubmitLead = (formData: {
+  // Lead form submission - waits for Google Sheets /api/leads confirmation
+  const handleSubmitLead = async (formData: {
     fullName: string;
     whatsappNumber: string;
     college: string;
@@ -104,7 +80,7 @@ export default function App() {
     careerInterest: string;
   }) => {
     const newLead: LeadData = {
-      id: `lead_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      id: `lead_${Date.now()}`,
       ...formData,
       personaId: detectedPersona.id,
       personaName: detectedPersona.name,
@@ -112,9 +88,8 @@ export default function App() {
       answers
     };
 
-    saveLead(newLead);
+    saveCurrentParticipant(newLead);
     setCurrentLead(newLead);
-    refreshLeads();
 
     // Trigger victory fanfare & confetti explosion!
     sounds.playFanfare();
@@ -143,7 +118,6 @@ export default function App() {
       {/* Top Header */}
       <TopNav
         stage={stage}
-        leadCount={leadsList.length}
         onOpenLeads={() => setIsLeadsModalOpen(true)}
         onOpenQr={() => setIsQrModalOpen(true)}
         onReset={handleReset}
@@ -314,7 +288,7 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {/* Footer Branding */}
+      {/* Footer Branding & Stall Contact */}
       <footer className="w-full py-4 border-t border-neutral-900 text-center text-xs text-neutral-400">
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -322,18 +296,25 @@ export default function App() {
             <span>·</span>
             <span>Interactive Lead Generation Stall Engine</span>
           </div>
-          <div className="text-[11px] font-mono text-neutral-400">
-            Fast 30-Sec AI Test · Zero Latency
+          <div className="text-[11px] font-mono text-neutral-400 flex items-center gap-2">
+            <span>Fast 30-Sec AI Test</span>
+            <span>·</span>
+            <a
+              href={getWhatsAppContactUrl('Hi, I am contacting you from the AI Arena stall.')}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-400 hover:text-emerald-300 font-semibold transition-colors"
+            >
+              Contact: {FORMATTED_CONTACT_PHONE}
+            </a>
           </div>
         </div>
       </footer>
 
-      {/* Stall Organizer Lead Vault Modal */}
+      {/* Stall Organizer Google Forms Modal */}
       <StallLeadsModal
         isOpen={isLeadsModalOpen}
         onClose={() => setIsLeadsModalOpen(false)}
-        leads={leadsList}
-        onRefreshLeads={refreshLeads}
       />
 
       {/* Attendee Queue QR Code Modal */}
