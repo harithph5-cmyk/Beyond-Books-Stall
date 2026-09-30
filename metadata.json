@@ -1,0 +1,6 @@
+{
+  "name": "AI ARENA — AI Knows You?",
+  "description": "Interactive lead generation game for booth stalls: discover your AI Persona in 30 seconds and unlock your personalized AI Career Roadmap.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
