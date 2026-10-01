@@ -164,6 +164,10 @@ class SoundEngine {
     }
   }
 
+  public playCelebration() {
+    this.playFanfare();
+  }
+
   public playFanfare() {
     if (this.muted) return;
     try {

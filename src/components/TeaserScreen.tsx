@@ -1,8 +1,8 @@
-import React from 'react';
-import { Lock, ArrowDown, Sparkles, ExternalLink } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Lock, ArrowDown, Sparkles, ExternalLink, X, Check, Copy, CheckCircle } from 'lucide-react';
 import { Persona } from '../types';
 import { sounds } from '../utils/audio';
-import { GOOGLE_FORM_URL } from '../utils/storage';
+import { GOOGLE_FORM_DIRECT_URL, GOOGLE_FORM_EMBED_URL } from '../utils/storage';
 import { PersonaIllustration } from './PersonaIllustrations';
 
 interface TeaserScreenProps {
@@ -20,10 +20,67 @@ const ROADMAP_STEPS_OVERVIEW = [
 ];
 
 export const TeaserScreen: React.FC<TeaserScreenProps> = ({ persona, onUnlock }) => {
-  const handleUnlockClick = () => {
+  const [showFormModal, setShowFormModal] = useState(false);
+  const [iframeLoadCount, setIframeLoadCount] = useState(0);
+  const [copiedPersona, setCopiedPersona] = useState(false);
+
+  // Watch for tab refocus or window close after opening external Google Form
+  const handleOpenExternalTab = () => {
+    sounds.playSelect();
+    const formWin = window.open(GOOGLE_FORM_DIRECT_URL, '_blank', 'noopener,noreferrer');
+
+    if (formWin) {
+      const checkTimer = setInterval(() => {
+        try {
+          if (formWin.closed) {
+            clearInterval(checkTimer);
+            sounds.playCelebration();
+            setShowFormModal(false);
+            onUnlock();
+          }
+        } catch {
+          // Cross-origin restriction
+        }
+      }, 600);
+    }
+
+    const handleFocus = () => {
+      // User switched back from Google Form tab
+      sounds.playCelebration();
+      setShowFormModal(false);
+      onUnlock();
+    };
+
+    window.addEventListener('focus', handleFocus, { once: true });
+  };
+
+  const handleOpenModal = () => {
     sounds.playScreenComplete();
-    window.open(GOOGLE_FORM_URL, '_blank', 'noopener,noreferrer');
-    onUnlock();
+    setIframeLoadCount(0);
+    setShowFormModal(true);
+  };
+
+  const handleCopyPersona = () => {
+    sounds.playClick();
+    navigator.clipboard.writeText(persona.name);
+    setCopiedPersona(true);
+    setTimeout(() => setCopiedPersona(false), 2000);
+  };
+
+  // When iframe reloads (after submit), auto-advance to the confirmation screen
+  const handleIframeLoad = () => {
+    setIframeLoadCount((prev) => {
+      const next = prev + 1;
+      if (next >= 2) {
+        // Form submitted inside the iframe!
+        sounds.playCelebration();
+        setTimeout(() => {
+          setShowFormModal(false);
+          onUnlock();
+        }, 1200);
+      }
+      return next;
+    });
   };
 
   return (
@@ -72,11 +129,10 @@ export const TeaserScreen: React.FC<TeaserScreenProps> = ({ persona, onUnlock })
           </span>
         </div>
 
-        {/* Vertical flow as verbatim requested in doc:
-            YOUR PERSONA ↓ YOUR STRENGTHS ↓ AI CAREER PATHS ↓ SKILLS TO LEARN ↓ PROJECT IDEAS ↓ CAREER OPTIONS */}
+        {/* Vertical flow steps */}
         <div className="space-y-2 max-w-md mx-auto">
           {ROADMAP_STEPS_OVERVIEW.map((item, index) => (
-            <React.Fragment key={item}>
+            <React.Fragment key={index}>
               <div className="p-3 rounded-lg bg-neutral-950/70 border border-neutral-800/80 flex items-center justify-between text-left group">
                 <div className="flex items-center gap-3">
                   <span className="font-mono text-xs text-neutral-500 w-5">
@@ -111,9 +167,9 @@ export const TeaserScreen: React.FC<TeaserScreenProps> = ({ persona, onUnlock })
         </p>
       </div>
 
-      {/* CTA: 🔓 UNLOCK MY AI CAREER ROADMAP (Directly opens Google Forms) */}
+      {/* CTA: 🔓 UNLOCK MY AI CAREER ROADMAP (Opens Google Form Modal / Tab) */}
       <button
-        onClick={handleUnlockClick}
+        onClick={handleOpenModal}
         className="group relative inline-flex items-center justify-center gap-3 px-8 sm:px-12 py-4 sm:py-5 rounded-2xl text-lg sm:text-xl font-black text-black bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 shadow-[0_0_35px_rgba(16,185,129,0.45)] hover:shadow-[0_0_55px_rgba(16,185,129,0.7)] transform hover:-translate-y-1 active:translate-y-0 transition-all duration-200 cursor-pointer overflow-hidden border border-emerald-300/40"
       >
         <span className="relative z-10 flex items-center gap-2.5">
@@ -123,10 +179,99 @@ export const TeaserScreen: React.FC<TeaserScreenProps> = ({ persona, onUnlock })
       </button>
 
       <p className="text-xs font-mono text-emerald-400/90 mt-3 flex items-center justify-center gap-1.5">
-        <span>⚡ Directly opens Official Google Form</span>
-        <span>·</span>
-        <span>Free Instant Unlock</span>
+        <span>⚡ Submit in Google Form to instantly reveal Roadmap</span>
       </p>
+
+      {/* Embedded Google Form Sheet Modal */}
+      {showFormModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/90 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-2xl h-[92vh] max-h-[820px] bg-neutral-900 border border-neutral-800 rounded-3xl flex flex-col shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 border-b border-neutral-800 bg-neutral-950 flex items-center justify-between gap-3 shrink-0">
+              <div className="flex items-center gap-3 text-left">
+                <span className="text-2xl">{persona.emoji}</span>
+                <div>
+                  <div className="text-[10px] font-mono uppercase tracking-widest text-emerald-400 font-bold">
+                    OFFICIAL BOOTH REGISTRATION
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold text-white font-display">
+                    Fill Google Form &amp; Unlock Roadmap
+                  </h3>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleCopyPersona}
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-800 border border-neutral-700 text-xs font-mono text-neutral-300 hover:text-white"
+                  title="Copy your Persona to paste in Google Form"
+                >
+                  {copiedPersona ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-emerald-400">Persona Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-neutral-400" />
+                      <span>Copy {persona.name}</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setShowFormModal(false)}
+                  className="p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-neutral-800 cursor-pointer"
+                  title="Close form"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Embedded Live Google Form iframe */}
+            <div className="flex-1 w-full bg-white relative overflow-hidden">
+              <iframe
+                src={GOOGLE_FORM_EMBED_URL}
+                title="AI Arena Google Form"
+                className="w-full h-full border-0"
+                onLoad={handleIframeLoad}
+              />
+            </div>
+
+            {/* Sticky Action Footer */}
+            <div className="p-3 sm:p-4 bg-neutral-950 border-t border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+              <div className="text-[11px] font-mono text-neutral-400 text-center sm:text-left">
+                <span>Click <strong>Submit</strong> inside the form above, then proceed!</span>
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={handleOpenExternalTab}
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-neutral-850 border border-neutral-700 hover:border-neutral-600 text-xs font-mono text-neutral-300 hover:text-white cursor-pointer"
+                >
+                  <span>Open in Tab</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    sounds.playCelebration();
+                    setShowFormModal(false);
+                    onUnlock();
+                  }}
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-black bg-gradient-to-r from-emerald-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 shadow-[0_0_20px_rgba(16,185,129,0.4)] cursor-pointer"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  <span>I Clicked Submit → View Roadmap</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

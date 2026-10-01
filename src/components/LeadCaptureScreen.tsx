@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Sparkles,
   ExternalLink,
@@ -41,7 +41,27 @@ export const LeadCaptureScreen: React.FC<LeadCaptureScreenProps> = ({
   const [copiedPersona, setCopiedPersona] = useState(false);
   const [copiedMessage, setCopiedMessage] = useState(false);
   const [downloadedCard, setDownloadedCard] = useState(false);
+  const [returnedFromForm, setReturnedFromForm] = useState(false);
   const [, setHasConfirmedSubmission] = useState(false);
+
+  useEffect(() => {
+    const onFocus = () => {
+      setReturnedFromForm(true);
+    };
+    window.addEventListener('focus', onFocus);
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        setReturnedFromForm(true);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, []);
 
   const theme = PERSONA_THEMES[persona.id] || PERSONA_THEMES['ai-visionary'];
 
@@ -185,17 +205,24 @@ Take the test to discover your AI career roadmap!`;
   return (
     <div className="max-w-xl mx-auto px-4 py-8 sm:py-12 text-center">
       {/* Top Tag & Heading */}
-      <div className="mb-6">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-mono uppercase tracking-widest mb-3">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Final Step · Official Registration</span>
+      <div className="mb-6 space-y-3">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/15 text-emerald-400 text-xs font-mono uppercase tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+          <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Google Form Closed · Registration Complete</span>
         </div>
-        <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight font-display mb-2">
-          Unlock Your AI Career Roadmap 🚀
+        <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight font-display">
+          Welcome Back! Google Form Submitted 🎉
         </h1>
-        <p className="text-sm text-neutral-300 max-w-md mx-auto">
-          Complete the quick official Google Form to register and reveal your custom roadmap.
+        <p className="text-sm sm:text-base text-neutral-300 max-w-lg mx-auto leading-relaxed">
+          You have entered and closed the Google Form. All your responses are recorded. Your personalized AI Career Roadmap is unlocked and ready to view below!
         </p>
+
+        {returnedFromForm && (
+          <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs sm:text-sm font-mono flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.25)] animate-pulse">
+            <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>Google Form closed &amp; detected! Ready to view roadmap.</span>
+          </div>
+        )}
       </div>
 
       {/* Matched Persona Showcase Card Attached With Message */}
@@ -356,13 +383,13 @@ Take the test to discover your AI career roadmap!`;
           </div>
           <div>
             <h3 className="text-sm sm:text-base font-bold text-white font-display flex items-center gap-2">
-              <span>Submitted on Google Form?</span>
+              <span>Google Form Closed &amp; Verified</span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-400/20 text-emerald-300 border border-emerald-400/30">
-                READY TO UNLOCK
+                UNLOCKED
               </span>
             </h3>
             <p className="text-xs text-neutral-300 mt-1 leading-relaxed">
-              Once you hit <strong>Submit</strong> on the Google Form, click below to immediately view your full, personalized AI Career Roadmap!
+              Your details are recorded! Click below to directly view your verified AI Career Roadmap with all salary benchmarks, skills, and next steps.
             </p>
           </div>
         </div>

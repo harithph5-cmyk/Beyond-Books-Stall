@@ -31,6 +31,17 @@ export default function App() {
 
   useEffect(() => {
     setIsSoundMuted(sounds.isMuted());
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (
+        searchParams.get('submitted') === 'true' ||
+        searchParams.get('form') === 'submitted' ||
+        searchParams.get('registered') === 'true' ||
+        window.location.hash === '#submitted'
+      ) {
+        setStage('form');
+      }
+    }
   }, []);
 
   // Restart / Reset for Next Stall Player
@@ -255,11 +266,11 @@ export default function App() {
           {stage === 'form' && (
             <motion.div
               key="form"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full relative z-10"
+              initial={{ opacity: 0, y: 24, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -24, scale: 0.98 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full relative z-10 py-2 sm:py-6 px-2 sm:px-4"
             >
               <LeadCaptureScreen
                 persona={detectedPersona}
