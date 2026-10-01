@@ -137,7 +137,7 @@ export const AnalyzingScreen: React.FC<AnalyzingScreenProps> = ({ onComplete }) 
         {isReady ? (
           <button
             onClick={() => {
-              sounds.playSelect();
+              sounds.playScreenComplete();
               onComplete();
             }}
             className="group inline-flex items-center gap-3 px-8 sm:px-10 py-4 rounded-xl text-lg font-bold text-black bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 shadow-[0_0_30px_rgba(16,185,129,0.4)] hover:shadow-[0_0_40px_rgba(16,185,129,0.6)] transform hover:-translate-y-0.5 transition-all cursor-pointer animate-fade-in"

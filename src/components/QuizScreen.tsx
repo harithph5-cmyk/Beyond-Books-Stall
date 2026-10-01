@@ -38,7 +38,12 @@ export const QuizScreen: React.FC<QuizScreenProps> = ({
 
   const handleChoose = (optionId: string) => {
     setSelectedAnim(optionId);
-    sounds.playSelect();
+    const isLastQuestion = currentQuestionIndex === questions.length - 1;
+    if (isLastQuestion) {
+      sounds.playScreenComplete();
+    } else {
+      sounds.playAnswerSelect();
+    }
     setTimeout(() => {
       onSelectOption(currentQ.id, optionId);
       setSelectedAnim(null);

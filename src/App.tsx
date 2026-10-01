@@ -21,7 +21,7 @@ export default function App() {
   const [stage, setStage] = useState<AppStage>('start');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
-  const [detectedPersona, setDetectedPersona] = useState<Persona>(PERSONAS['creative-builder']);
+  const [detectedPersona, setDetectedPersona] = useState<Persona>(PERSONAS['ai-visionary']);
   const [currentLead, setCurrentLead] = useState<LeadData | null>(null);
 
   // Stall Organizer Modals & Sound
@@ -38,7 +38,7 @@ export default function App() {
     setAnswers({});
     setCurrentQuestionIndex(0);
     setCurrentLead(null);
-    setDetectedPersona(PERSONAS['creative-builder']);
+    setDetectedPersona(PERSONAS['ai-visionary']);
     setStage('start');
   };
 
@@ -297,7 +297,7 @@ export default function App() {
             <span>Interactive Lead Generation Stall Engine</span>
           </div>
           <div className="text-[11px] font-mono text-neutral-400 flex items-center gap-2">
-            <span>Fast 30-Sec AI Test</span>
+            <span>Fast AI Personality Test</span>
             <span>·</span>
             <a
               href={getWhatsAppContactUrl('Hi, I am contacting you from the AI Arena stall.')}

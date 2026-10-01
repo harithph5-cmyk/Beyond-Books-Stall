@@ -103,6 +103,67 @@ class SoundEngine {
     }
   }
 
+  /**
+   * Short, subtle feedback sound effect when an answer option is selected
+   */
+  public playAnswerSelect() {
+    if (this.muted) return;
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      // Gentle, subtle rising tick (520Hz -> 760Hz)
+      osc.frequency.setValueAtTime(520, now);
+      osc.frequency.exponentialRampToValueAtTime(760, now + 0.05);
+
+      gain.gain.setValueAtTime(0.09, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.05);
+    } catch {
+      // Ignore audio failure
+    }
+  }
+
+  /**
+   * Short, subtle uplifting chime when completing a screen / quiz phase
+   */
+  public playScreenComplete() {
+    if (this.muted) return;
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      // Gentle 2-note ascending major chime (E5 -> A5)
+      const freqs = [659.25, 880.0];
+      freqs.forEach((freq, idx) => {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        const startTime = now + idx * 0.055;
+        const duration = 0.11;
+
+        osc.frequency.setValueAtTime(freq, startTime);
+        gain.gain.setValueAtTime(0.08, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      });
+    } catch {
+      // Ignore audio failure
+    }
+  }
+
   public playFanfare() {
     if (this.muted) return;
     try {

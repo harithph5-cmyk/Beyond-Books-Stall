@@ -3,9 +3,16 @@ export type QuestionOption = {
   emoji: string;
   text: string;
   traits: {
+    visionary?: number;
+    strategist?: number;
+    creator?: number;
+    explorer?: number;
+    connector?: number;
+    executor?: number;
+    detective?: number;
+    adapter?: number;
     creative?: number;
     aiExplorer?: number;
-    strategist?: number;
     problemSolver?: number;
     designer?: number;
     entrepreneur?: number;
@@ -20,8 +27,15 @@ export type Question = {
 };
 
 export type PersonaId =
-  | 'creative-builder'
+  | 'ai-visionary'
+  | 'ai-strategist'
+  | 'ai-creator'
   | 'ai-explorer'
+  | 'ai-connector'
+  | 'ai-executor'
+  | 'ai-detective'
+  | 'ai-adapter'
+  | 'creative-builder'
   | 'digital-strategist'
   | 'problem-solver'
   | 'experience-designer'
@@ -33,6 +47,14 @@ export type Persona = {
   name: string;
   emoji: string;
   tagline: string;
+  careersToExplore: string[];
+  indicativeSalary: {
+    early: string;
+    experienced: string;
+    notes?: string;
+  };
+  skillsToBuild: string[];
+  careerMove: string;
   interests: string[];
   potentialPaths: string[];
   ratings: {

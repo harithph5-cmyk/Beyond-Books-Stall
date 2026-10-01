@@ -24,52 +24,68 @@ const PERSONA_CARDS: {
   accent: string;
 }[] = [
   {
-    id: 'creative-builder',
-    name: 'CREATIVE BUILDER',
-    emoji: '🎨',
-    punchline: "You don't just consume. You make.",
-    sub: 'Ideas → things.',
+    id: 'ai-visionary',
+    name: 'THE AI VISIONARY',
+    emoji: '🚀',
+    punchline: 'Big-picture thinker who sees opportunities.',
+    sub: 'AI Product & Strategy.',
     accent: 'border-amber-500/40 hover:border-amber-400 group-hover:bg-amber-500/5'
   },
   {
-    id: 'ai-explorer',
-    name: 'AI EXPLORER',
-    emoji: '🤖',
-    punchline: 'You probably ask AI random questions at 2 AM.',
-    sub: 'Curiosity = your superpower.',
-    accent: 'border-emerald-500/40 hover:border-emerald-400 group-hover:bg-emerald-500/5'
-  },
-  {
-    id: 'digital-strategist',
-    name: 'DIGITAL STRATEGIST',
-    emoji: '📈',
-    punchline: 'You see the algorithm before everyone else does.',
-    sub: 'Clicks. Data. Growth.',
+    id: 'ai-strategist',
+    name: 'THE AI STRATEGIST',
+    emoji: '🧠',
+    punchline: 'Analytical, logical and data-driven.',
+    sub: 'Data & AI Business Intel.',
     accent: 'border-blue-500/40 hover:border-blue-400 group-hover:bg-blue-500/5'
   },
   {
-    id: 'problem-solver',
-    name: 'PROBLEM SOLVER',
-    emoji: '🧠',
-    punchline: "Give you a mess. You'll find the pattern.",
-    sub: 'Chaos → solution.',
-    accent: 'border-violet-500/40 hover:border-violet-400 group-hover:bg-violet-500/5'
-  },
-  {
-    id: 'experience-designer',
-    name: 'EXPERIENCE DESIGNER',
-    emoji: '✨',
-    punchline: 'You notice the tiny things everyone else misses.',
-    sub: 'Make it useful. Make it beautiful.',
+    id: 'ai-creator',
+    name: 'THE AI CREATOR',
+    emoji: '🎨',
+    punchline: 'Creative, imaginative and digitally expressive.',
+    sub: 'Generative AI & Content.',
     accent: 'border-pink-500/40 hover:border-pink-400 group-hover:bg-pink-500/5'
   },
   {
-    id: 'ai-entrepreneur',
-    name: 'AI ENTREPRENEUR',
-    emoji: '🚀',
-    punchline: 'You don\'t ask "Can this work?"',
-    sub: 'You ask "How do I build it?"',
+    id: 'ai-explorer',
+    name: 'THE AI EXPLORER',
+    emoji: '⚡',
+    punchline: 'Curious, experimental and excited by new technology.',
+    sub: 'Prompt Engineering & Agents.',
+    accent: 'border-emerald-500/40 hover:border-emerald-400 group-hover:bg-emerald-500/5'
+  },
+  {
+    id: 'ai-connector',
+    name: 'THE AI CONNECTOR',
+    emoji: '🤝',
+    punchline: 'People-focused, communicative and collaborative.',
+    sub: 'AI Consulting & Growth.',
     accent: 'border-orange-500/40 hover:border-orange-400 group-hover:bg-orange-500/5'
+  },
+  {
+    id: 'ai-executor',
+    name: 'THE AI EXECUTOR',
+    emoji: '🔥',
+    punchline: 'Action-oriented and obsessed with getting things done.',
+    sub: 'Automation & Operations.',
+    accent: 'border-red-500/40 hover:border-red-400 group-hover:bg-red-500/5'
+  },
+  {
+    id: 'ai-detective',
+    name: 'THE AI DETECTIVE',
+    emoji: '🔍',
+    punchline: 'Curious, investigative and evidence-driven.',
+    sub: 'AI Research & Fact Checking.',
+    accent: 'border-violet-500/40 hover:border-violet-400 group-hover:bg-violet-500/5'
+  },
+  {
+    id: 'ai-adapter',
+    name: 'THE AI ADAPTER',
+    emoji: '🌱',
+    punchline: 'Flexible, fast-learning and comfortable with change.',
+    sub: 'Digital Transformation.',
+    accent: 'border-lime-500/40 hover:border-lime-400 group-hover:bg-lime-500/5'
   }
 ];
 
@@ -107,7 +123,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onOpenQr }) =
       {/* Subheadline */}
       <div className="text-lg sm:text-2xl text-neutral-200 font-medium space-y-1 mb-8 max-w-xl">
         <p className="font-semibold text-emerald-400 font-mono text-base sm:text-lg">
-          5 questions. 30 seconds.
+          10 questions. 60 seconds.
         </p>
         <p className="text-neutral-300">
           Let&apos;s see if AI gets you right.
@@ -141,7 +157,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onOpenQr }) =
       {/* Big Main CTA */}
       <button
         onClick={() => {
-          sounds.playSelect();
+          sounds.playScreenComplete();
           onStart();
         }}
         className="group relative inline-flex items-center gap-3 px-8 sm:px-12 py-4 sm:py-5 rounded-2xl text-lg sm:text-xl font-bold text-neutral-950 bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 shadow-[0_0_30px_rgba(16,185,129,0.35)] hover:shadow-[0_0_45px_rgba(16,185,129,0.6)] transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer"

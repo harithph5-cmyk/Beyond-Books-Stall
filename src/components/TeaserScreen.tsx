@@ -1,7 +1,8 @@
 import React from 'react';
-import { Lock, ArrowDown, Sparkles } from 'lucide-react';
+import { Lock, ArrowDown, Sparkles, ExternalLink } from 'lucide-react';
 import { Persona } from '../types';
 import { sounds } from '../utils/audio';
+import { GOOGLE_FORM_URL } from '../utils/storage';
 import { PersonaIllustration } from './PersonaIllustrations';
 
 interface TeaserScreenProps {
@@ -19,6 +20,12 @@ const ROADMAP_STEPS_OVERVIEW = [
 ];
 
 export const TeaserScreen: React.FC<TeaserScreenProps> = ({ persona, onUnlock }) => {
+  const handleUnlockClick = () => {
+    sounds.playScreenComplete();
+    window.open(GOOGLE_FORM_URL, '_blank', 'noopener,noreferrer');
+    onUnlock();
+  };
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12 text-center">
       {/* Top Badge */}
@@ -104,19 +111,21 @@ export const TeaserScreen: React.FC<TeaserScreenProps> = ({ persona, onUnlock })
         </p>
       </div>
 
-      {/* CTA: 🔓 UNLOCK MY AI CAREER ROADMAP (Page 5) */}
+      {/* CTA: 🔓 UNLOCK MY AI CAREER ROADMAP (Directly opens Google Forms) */}
       <button
-        onClick={() => {
-          sounds.playSelect();
-          onUnlock();
-        }}
-        className="group inline-flex items-center gap-3 px-8 sm:px-12 py-4 sm:py-5 rounded-xl text-lg sm:text-xl font-extrabold text-black bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 shadow-[0_0_30px_rgba(16,185,129,0.35)] hover:shadow-[0_0_45px_rgba(16,185,129,0.6)] transform hover:-translate-y-0.5 transition-all cursor-pointer"
+        onClick={handleUnlockClick}
+        className="group relative inline-flex items-center justify-center gap-3 px-8 sm:px-12 py-4 sm:py-5 rounded-2xl text-lg sm:text-xl font-black text-black bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 shadow-[0_0_35px_rgba(16,185,129,0.45)] hover:shadow-[0_0_55px_rgba(16,185,129,0.7)] transform hover:-translate-y-1 active:translate-y-0 transition-all duration-200 cursor-pointer overflow-hidden border border-emerald-300/40"
       >
-        <span>🔓 UNLOCK MY AI CAREER ROADMAP</span>
+        <span className="relative z-10 flex items-center gap-2.5">
+          <span>🔓 REGISTER ON GOOGLE FORM & UNLOCK ROADMAP</span>
+          <ExternalLink className="w-5 h-5 transition-transform duration-200 group-hover:translate-x-1 group-hover:-translate-y-0.5" />
+        </span>
       </button>
 
-      <p className="text-xs font-mono text-neutral-500 mt-4">
-        100% Free for Stall Participants · Instant Verification
+      <p className="text-xs font-mono text-emerald-400/90 mt-3 flex items-center justify-center gap-1.5">
+        <span>⚡ Directly opens Official Google Form</span>
+        <span>·</span>
+        <span>Free Instant Unlock</span>
       </p>
     </div>
   );
