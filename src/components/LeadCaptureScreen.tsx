@@ -3,21 +3,24 @@ import {
   Sparkles,
   ExternalLink,
   CheckCircle,
-  Copy,
   Check,
-  User,
   ArrowRight,
-  ShieldCheck,
+  Lock,
+  X,
   Phone,
-  Paperclip,
-  Download,
-  MessageSquare
+  ArrowLeft,
+  Smartphone
 } from 'lucide-react';
 import { Persona } from '../types';
 import { sounds } from '../utils/audio';
-import { GOOGLE_FORM_URL, FORMATTED_CONTACT_PHONE, getWhatsAppContactUrl, WHATSAPP_GROUP_URL } from '../utils/storage';
-import { PersonaIllustration } from './PersonaIllustrations';
-import { PERSONA_THEMES } from './RoadmapScreen';
+import {
+  GOOGLE_FORM_URL,
+  GOOGLE_FORM_DIRECT_URL,
+  GOOGLE_FORM_EMBED_URL,
+  FORMATTED_CONTACT_PHONE,
+  getWhatsAppContactUrl,
+  WHATSAPP_GROUP_URL
+} from '../utils/storage';
 
 interface LeadCaptureScreenProps {
   persona: Persona;
@@ -30,171 +33,91 @@ interface LeadCaptureScreenProps {
     careerInterest: string;
   }) => void;
   onBack: () => void;
+  isPreGame?: boolean;
 }
+
+type TabKey = 'form' | 'whatsapp' | 'ready';
 
 export const LeadCaptureScreen: React.FC<LeadCaptureScreenProps> = ({
   persona,
-  onSubmitLead
+  onSubmitLead,
+  onBack,
+  isPreGame = true
 }) => {
-  const [attendeeName, setAttendeeName] = useState('');
-  const [hasOpenedForm, setHasOpenedForm] = useState(true);
-  const [copiedPersona, setCopiedPersona] = useState(false);
-  const [copiedMessage, setCopiedMessage] = useState(false);
-  const [downloadedCard, setDownloadedCard] = useState(false);
-  const [returnedFromForm, setReturnedFromForm] = useState(false);
-  const [, setHasConfirmedSubmission] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabKey>('form');
+  const [step1Completed, setStep1Completed] = useState(false);
+  const [step2Completed, setStep2Completed] = useState(false);
+  const [tabError, setTabError] = useState('');
+  const [iframeLoadCount, setIframeLoadCount] = useState(0);
 
+  // Auto-detect return from Google Form tab
   useEffect(() => {
-    const onFocus = () => {
-      setReturnedFromForm(true);
+    const handleReturn = () => {
+      setStep1Completed(true);
+      setTabError('');
     };
-    window.addEventListener('focus', onFocus);
 
-    const onVisibility = () => {
+    window.addEventListener('focus', handleReturn);
+    const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
-        setReturnedFromForm(true);
+        setStep1Completed(true);
+        setTabError('');
       }
     };
-    document.addEventListener('visibilitychange', onVisibility);
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
-      window.removeEventListener('focus', onFocus);
-      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('focus', handleReturn);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
 
-  const theme = PERSONA_THEMES[persona.id] || PERSONA_THEMES['ai-visionary'];
-
-  const attachedMessageText = `🚀 I just discovered my AI Era Personality on AI Arena!
-
-✨ MY PERSONA: ${persona.name} ${persona.emoji}
-"${persona.tagline}"
-
-💼 Top Careers: ${(persona.careersToExplore || []).slice(0, 3).join(', ')}
-💰 Salary Benchmark: ${persona.indicativeSalary?.early || '₹4–8 LPA'} (Early) · ${persona.indicativeSalary?.experienced || '₹10–20+ LPA'} (Exp)
-🛠️ Key Skills: ${(persona.skillsToBuild || []).slice(0, 4).join(' • ')}
-🎯 Career Move: "${persona.careerMove || ''}"
-
-Take the test to discover your AI career roadmap!`;
-
-  const handleOpenGoogleForm = () => {
+  const handleOpenGoogleFormTab = () => {
     sounds.playSelect();
-    setHasOpenedForm(true);
-    window.open(GOOGLE_FORM_URL, '_blank', 'noopener,noreferrer');
+    setStep1Completed(true);
+    setTabError('');
+    window.open(GOOGLE_FORM_DIRECT_URL || GOOGLE_FORM_URL, '_blank', 'noopener,noreferrer');
   };
 
-  const handleCopyPersona = () => {
-    sounds.playClick();
-    navigator.clipboard.writeText(persona.name);
-    setCopiedPersona(true);
-    setTimeout(() => setCopiedPersona(false), 2000);
-  };
-
-  const handleCopyAttachedMessage = () => {
-    sounds.playClick();
-    navigator.clipboard.writeText(attachedMessageText);
-    setCopiedMessage(true);
-    setTimeout(() => setCopiedMessage(false), 2000);
-  };
-
-  const handleShareAttachedMessage = () => {
+  const handleCompleteStep1 = () => {
     sounds.playSelect();
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(attachedMessageText)}`, '_blank');
+    setStep1Completed(true);
+    setTabError('');
+    setActiveTab('whatsapp');
   };
 
-  const handleDownloadCard = () => {
-    sounds.playClick();
-    try {
-      const canvas = document.createElement('canvas');
-      canvas.width = 800;
-      canvas.height = 480;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+  const handleJoinWhatsApp = () => {
+    sounds.playSelect();
+    setStep2Completed(true);
+    setTabError('');
+    window.open(WHATSAPP_GROUP_URL, '_blank', 'noopener,noreferrer');
+  };
 
-      // Dark cyber background
-      const bg = ctx.createLinearGradient(0, 0, 800, 480);
-      bg.addColorStop(0, '#09090b');
-      bg.addColorStop(1, '#18181b');
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, 800, 480);
+  const handleCompleteStep2 = () => {
+    sounds.playCelebration();
+    setStep2Completed(true);
+    setTabError('');
+    setActiveTab('ready');
+  };
 
-      // Accent border
-      ctx.strokeStyle = theme.accentHex;
-      ctx.lineWidth = 4;
-      ctx.strokeRect(16, 16, 768, 448);
-
-      // Top Tag
-      ctx.fillStyle = theme.accentHex;
-      ctx.font = 'bold 16px monospace';
-      ctx.fillText('AI ARENA · OFFICIAL AI PERSONA CARD', 40, 55);
-
-      // Persona Name & Emoji
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 36px sans-serif';
-      ctx.fillText(`${persona.name} ${persona.emoji}`, 40, 105);
-
-      // Tagline
-      ctx.fillStyle = '#d4d4d8';
-      ctx.font = 'italic 18px sans-serif';
-      ctx.fillText(`"${persona.tagline}"`, 40, 140);
-
-      // Compensation Box
-      ctx.fillStyle = '#27272a';
-      ctx.fillRect(40, 168, 720, 72);
-      ctx.fillStyle = theme.accentHex;
-      ctx.font = 'bold 13px monospace';
-      ctx.fillText('INDICATIVE INDIA COMPENSATION:', 55, 194);
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 18px sans-serif';
-      ctx.fillText(
-        `${persona.indicativeSalary?.early || ''}   |   ${persona.indicativeSalary?.experienced || ''}`,
-        55,
-        224
-      );
-
-      // Top Careers
-      ctx.fillStyle = '#a1a1aa';
-      ctx.font = 'bold 13px monospace';
-      ctx.fillText('CAREERS TO EXPLORE:', 40, 275);
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '16px sans-serif';
-      ctx.fillText((persona.careersToExplore || []).slice(0, 4).join('   •   '), 40, 305);
-
-      // Skills to Build
-      ctx.fillStyle = '#a1a1aa';
-      ctx.font = 'bold 13px monospace';
-      ctx.fillText('SKILLS TO BUILD:', 40, 350);
-      ctx.fillStyle = theme.accentHex;
-      ctx.font = '16px sans-serif';
-      ctx.fillText((persona.skillsToBuild || []).slice(0, 5).join('   •   '), 40, 380);
-
-      // Footer
-      ctx.fillStyle = '#71717a';
-      ctx.font = '12px monospace';
-      ctx.fillText('Tested live at AI Arena Stall Booth · ai-arena.stall', 40, 435);
-
-      const dataUrl = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.download = `${persona.id}-persona-card.png`;
-      link.href = dataUrl;
-      link.click();
-      setDownloadedCard(true);
-      setTimeout(() => setDownloadedCard(false), 2500);
-    } catch {
-      handleCopyPersona();
+  const handleEnterGame = () => {
+    if (!step1Completed) {
+      sounds.playClick();
+      setTabError('Step 1 (Google Form) is mandatory before entering!');
+      setActiveTab('form');
+      return;
     }
-  };
+    if (!step2Completed) {
+      sounds.playClick();
+      setTabError('Step 2 (WhatsApp Group) is mandatory before entering!');
+      setActiveTab('whatsapp');
+      return;
+    }
 
-  const handleFinalUnlock = (e: React.FormEvent) => {
-    e.preventDefault();
     sounds.playFanfare();
-    setHasConfirmedSubmission(true);
-
-    const displayName = attendeeName.trim() || 'Stall Participant';
-
     onSubmitLead({
-      fullName: displayName,
-      whatsappNumber: 'Registered via Google Form',
+      fullName: 'AI Arena Player',
+      whatsappNumber: 'Registered via Google Form & WhatsApp',
       college: 'AI Arena Attendee',
       department: 'Technology',
       yearOfStudy: 'Enrolled',
@@ -202,217 +125,225 @@ Take the test to discover your AI career roadmap!`;
     });
   };
 
+  // Iframe reload detection for auto-advancing after submit
+  const handleIframeLoad = () => {
+    setIframeLoadCount((prev) => {
+      const next = prev + 1;
+      if (next >= 2) {
+        sounds.playCelebration();
+        setStep1Completed(true);
+        setTimeout(() => {
+          setActiveTab('whatsapp');
+        }, 1200);
+      }
+      return next;
+    });
+  };
+
   return (
-    <div className="max-w-xl mx-auto px-4 py-8 sm:py-12 text-center">
-      {/* Top Tag & Heading */}
-      <div className="mb-6 space-y-3">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/15 text-emerald-400 text-xs font-mono uppercase tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-          <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Google Form Closed · Registration Complete</span>
-        </div>
-        <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight font-display">
-          Welcome Back! Google Form Submitted 🎉
-        </h1>
-        <p className="text-sm sm:text-base text-neutral-300 max-w-lg mx-auto leading-relaxed">
-          You have entered and closed the Google Form. All your responses are recorded. Your personalized AI Career Roadmap is unlocked and ready to view below!
-        </p>
-
-        {returnedFromForm && (
-          <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs sm:text-sm font-mono flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.25)] animate-pulse">
-            <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>Google Form closed &amp; detected! Ready to view roadmap.</span>
-          </div>
-        )}
+    <div className="max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-8 text-center">
+      {/* Top Badge */}
+      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-amber-500/40 bg-amber-500/10 text-amber-400 text-xs font-mono uppercase tracking-widest mb-3">
+        <Lock className="w-3 h-3" />
+        <span>MANDATORY PRE-GAME ENTRY · ORDERED TABS</span>
       </div>
 
-      {/* Matched Persona Showcase Card Attached With Message */}
-      <div
-        className={`relative mb-6 rounded-2xl bg-gradient-to-br ${theme.bgGradient} border-2 ${theme.borderColor} ${theme.glowShadow} p-4 sm:p-6 shadow-2xl backdrop-blur-md text-left overflow-hidden space-y-4`}
-      >
-        {/* Ambient Top Glow */}
-        <div
-          className="absolute -top-12 -right-12 w-44 h-44 rounded-full blur-3xl opacity-30 pointer-events-none"
-          style={{ backgroundColor: theme.accentHex }}
-        />
+      <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight font-display mb-2">
+        Complete Tabs to Enter the Game 🎮
+      </h1>
+      <p className="text-xs sm:text-sm text-neutral-300 max-w-md mx-auto mb-6">
+        Complete both mandatory tabs in order. Once verified, you will immediately enter the 30-second AI test!
+      </p>
 
-        {/* Attachment Header Label */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10 text-xs font-mono">
-          <div className="flex items-center gap-1.5 text-neutral-300">
-            <Paperclip className="w-3.5 h-3.5 text-emerald-400 rotate-45" />
-            <span className="font-bold tracking-wider uppercase">ATTACHED CARD IMAGE &amp; MESSAGE</span>
-          </div>
-          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest border ${theme.badgePill}`}>
-            ARCHETYPE #{persona.code}
-          </span>
-        </div>
-
-        {/* Visual Card Image Preview */}
-        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 bg-neutral-950/80 border border-white/10 rounded-xl p-3.5 sm:p-4">
-          <div className="shrink-0 flex items-center justify-center">
-            <PersonaIllustration id={persona.id} size="sm" />
-          </div>
-
-          <div className="flex-1 text-center sm:text-left">
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-1">
-              <span className="text-base sm:text-lg font-black text-white font-display flex items-center gap-1.5">
-                <span>{persona.name}</span>
-                <span>{persona.emoji}</span>
-              </span>
-              <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold ${theme.textColor} bg-white/5`}>
-                {theme.tag}
-              </span>
-            </div>
-
-            <p className="text-xs sm:text-sm text-neutral-300 italic mb-2">
-              &ldquo;{persona.tagline}&rdquo;
-            </p>
-
-            {/* Quick Metrics */}
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-[11px] font-mono">
-              <span className="px-2 py-0.5 rounded bg-neutral-900 border border-neutral-800 text-neutral-300">
-                💰 {persona.indicativeSalary?.early || '₹4–8 LPA'} (Early)
-              </span>
-              <span className="px-2 py-0.5 rounded bg-neutral-900 border border-neutral-800 text-cyan-300">
-                🚀 {persona.indicativeSalary?.experienced || '₹10–20+ LPA'} (Exp)
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Attached Shareable Message Preview */}
-        <div className="p-3.5 rounded-xl bg-neutral-950/90 border border-neutral-800 space-y-2">
-          <div className="flex items-center justify-between text-[11px] font-mono text-neutral-400">
-            <span className="flex items-center gap-1.5 text-neutral-300 font-semibold">
-              <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
-              Attached Share Message:
+      {/* Sequential Tabs Header Navigation */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 p-1.5 rounded-2xl bg-neutral-900/90 border border-neutral-800 mb-6 shadow-xl backdrop-blur-md">
+        {/* Tab 1 Button */}
+        <button
+          type="button"
+          onClick={() => {
+            sounds.playClick();
+            setActiveTab('form');
+            setTabError('');
+          }}
+          className={`flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 sm:py-3 px-2 rounded-xl text-xs sm:text-sm font-mono font-bold transition-all cursor-pointer ${
+            activeTab === 'form'
+              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-black shadow-[0_0_20px_rgba(16,185,129,0.35)]'
+              : step1Completed
+              ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'
+              : 'bg-neutral-850 text-neutral-400 hover:text-white border border-transparent'
+          }`}
+        >
+          {step1Completed ? (
+            <Check className="w-4 h-4 text-current" />
+          ) : (
+            <span className="w-4 h-4 rounded-full bg-black/20 flex items-center justify-center text-[10px]">
+              1
             </span>
-            <span className="text-[10px] text-neutral-500">Auto-formatted for WhatsApp / LinkedIn</span>
-          </div>
+          )}
+          <span className="truncate">1. Google Form</span>
+          <span className={`hidden sm:inline text-[9px] px-1 py-0.2 rounded font-mono ${
+            activeTab === 'form' ? 'bg-black/25 text-black' : 'bg-amber-500/20 text-amber-300'
+          }`}>
+            REQ
+          </span>
+        </button>
 
-          <div className="p-2.5 rounded-lg bg-neutral-900/90 border border-neutral-800/80 font-mono text-xs text-neutral-300 leading-relaxed whitespace-pre-line select-all">
-            {attachedMessageText}
-          </div>
-        </div>
+        {/* Tab 2 Button */}
+        <button
+          type="button"
+          onClick={() => {
+            if (!step1Completed) {
+              sounds.playClick();
+              setTabError('Please complete Step 1 (Google Form) first!');
+              return;
+            }
+            sounds.playClick();
+            setActiveTab('whatsapp');
+            setTabError('');
+          }}
+          className={`flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 sm:py-3 px-2 rounded-xl text-xs sm:text-sm font-mono font-bold transition-all cursor-pointer ${
+            activeTab === 'whatsapp'
+              ? 'bg-[#25D366] text-black shadow-[0_0_20px_rgba(37,211,102,0.35)]'
+              : step2Completed
+              ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'
+              : step1Completed
+              ? 'bg-neutral-850 text-neutral-300 hover:text-white border border-neutral-700'
+              : 'bg-neutral-900 text-neutral-500 border border-transparent opacity-60'
+          }`}
+        >
+          {step2Completed ? (
+            <Check className="w-4 h-4 text-current" />
+          ) : !step1Completed ? (
+            <Lock className="w-3.5 h-3.5 text-current" />
+          ) : (
+            <span className="w-4 h-4 rounded-full bg-black/20 flex items-center justify-center text-[10px]">
+              2
+            </span>
+          )}
+          <span className="truncate">2. WhatsApp</span>
+          <span className={`hidden sm:inline text-[9px] px-1 py-0.2 rounded font-mono ${
+            activeTab === 'whatsapp' ? 'bg-black/25 text-black' : 'bg-[#25D366]/20 text-[#25D366]'
+          }`}>
+            REQ
+          </span>
+        </button>
 
-        {/* Attached Card Action Toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Download Card Image */}
-            <button
-              type="button"
-              onClick={handleDownloadCard}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-750 border border-neutral-700 hover:border-emerald-500/50 text-xs font-mono font-semibold text-neutral-200 hover:text-white transition-all cursor-pointer shadow-sm"
-              title="Download high-resolution Persona Card image"
-            >
-              {downloadedCard ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="text-emerald-400">Card Saved!</span>
-                </>
-              ) : (
-                <>
-                  <Download className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Download Card Image</span>
-                </>
-              )}
-            </button>
-
-            {/* Copy Persona Name (for Google Form) */}
-            <button
-              type="button"
-              onClick={handleCopyPersona}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-750 border border-neutral-700 hover:border-emerald-500/50 text-xs font-mono text-neutral-200 hover:text-white transition-all cursor-pointer shadow-sm"
-              title="Copy Persona to paste into Google Form"
-            >
-              {copiedPersona ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="text-emerald-400 font-semibold">Persona Copied!</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5 text-neutral-400" />
-                  <span>Copy Persona</span>
-                </>
-              )}
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* Copy Full Attached Message */}
-            <button
-              type="button"
-              onClick={handleCopyAttachedMessage}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-750 border border-neutral-700 hover:border-emerald-500/50 text-xs font-mono text-neutral-200 hover:text-white transition-all cursor-pointer shadow-sm"
-              title="Copy full message text to clipboard"
-            >
-              {copiedMessage ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="text-emerald-400">Message Copied!</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5 text-neutral-400" />
-                  <span>Copy Message</span>
-                </>
-              )}
-            </button>
-
-            {/* Quick Share to WhatsApp with Attached Message */}
-            <button
-              type="button"
-              onClick={handleShareAttachedMessage}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#25D366] hover:bg-[#20bd5a] text-xs font-bold text-black transition-all cursor-pointer shadow-[0_0_15px_rgba(37,211,102,0.3)]"
-            >
-              <span>💬 WhatsApp</span>
-            </button>
-          </div>
-        </div>
+        {/* Tab 3 Button */}
+        <button
+          type="button"
+          onClick={() => {
+            if (!step1Completed || !step2Completed) {
+              sounds.playClick();
+              setTabError('Complete Tab 1 and Tab 2 first before entering!');
+              return;
+            }
+            sounds.playClick();
+            setActiveTab('ready');
+            setTabError('');
+          }}
+          className={`flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 sm:py-3 px-2 rounded-xl text-xs sm:text-sm font-mono font-bold transition-all cursor-pointer ${
+            activeTab === 'ready'
+              ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-black shadow-[0_0_20px_rgba(6,182,212,0.35)]'
+              : step1Completed && step2Completed
+              ? 'bg-cyan-500/10 text-cyan-300 border border-cyan-500/30'
+              : 'bg-neutral-900 text-neutral-500 border border-transparent opacity-60'
+          }`}
+        >
+          {step1Completed && step2Completed ? (
+            <Sparkles className="w-4 h-4 text-current" />
+          ) : (
+            <Lock className="w-3.5 h-3.5 text-current" />
+          )}
+          <span className="truncate">3. Enter Game 🎮</span>
+        </button>
       </div>
 
-      {/* Main Registration & Instant Roadmap Unlock Card */}
-      <div className="relative rounded-2xl bg-gradient-to-b from-neutral-900/95 via-neutral-900/90 to-neutral-950/95 border-2 border-emerald-500/50 shadow-[0_0_50px_rgba(16,185,129,0.2)] p-6 sm:p-8 text-left space-y-6 backdrop-blur-md overflow-hidden">
-        {/* Top vibrant cyber gradient accent line */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400" />
+      {/* Tab Error Warning */}
+      {tabError && (
+        <div className="mb-4 p-3 rounded-xl bg-red-500/15 border border-red-500/40 text-red-300 text-xs font-mono flex items-center justify-center gap-2 animate-shake">
+          <span>⚠️ {tabError}</span>
+        </div>
+      )}
 
-        {/* Status Callout */}
-        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-3">
-          <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-            <CheckCircle className="w-4 h-4" />
+      {/* ================= TAB 1: GOOGLE FORM (MANDATORY) ================= */}
+      {activeTab === 'form' && (
+        <div className="rounded-3xl bg-neutral-900/95 border-2 border-emerald-500/50 p-4 sm:p-6 shadow-2xl backdrop-blur-md text-left flex flex-col space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+            <div>
+              <div className="text-[10px] font-mono uppercase tracking-widest text-emerald-400 font-bold mb-1">
+                TAB 1 OF 2 · MANDATORY STEP
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-white font-display flex items-center gap-2">
+                <span>📝 Fill Official Google Form</span>
+              </h2>
+              <p className="text-xs text-neutral-300 mt-0.5">
+                Fill the form below and click Submit to proceed to the WhatsApp step.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={handleOpenGoogleFormTab}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-750 border border-neutral-700 text-xs font-mono text-neutral-200 hover:text-white cursor-pointer"
+              >
+                <span>Open in Tab</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
-          <div>
-            <h3 className="text-sm sm:text-base font-bold text-white font-display flex items-center gap-2">
-              <span>Google Form Closed &amp; Verified</span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-400/20 text-emerald-300 border border-emerald-400/30">
-                UNLOCKED
-              </span>
-            </h3>
-            <p className="text-xs text-neutral-300 mt-1 leading-relaxed">
-              Your details are recorded! Click below to directly view your verified AI Career Roadmap with all salary benchmarks, skills, and next steps.
-            </p>
+
+          {/* Embedded Google Form Iframe */}
+          <div className="w-full h-[460px] sm:h-[520px] rounded-2xl overflow-hidden border border-neutral-750 bg-white relative shadow-inner">
+            <iframe
+              src={GOOGLE_FORM_EMBED_URL}
+              title="AI Arena Google Form"
+              className="w-full h-full border-0"
+              onLoad={handleIframeLoad}
+            />
+          </div>
+
+          {/* Tab 1 Navigation Action Footer */}
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <span className="text-xs font-mono text-neutral-400 text-center sm:text-left">
+              {step1Completed
+                ? '✅ Google Form verified! Ready for Tab 2.'
+                : 'Submitted the form? Click Next to continue.'}
+            </span>
+
+            <button
+              type="button"
+              onClick={handleCompleteStep1}
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl font-black text-sm text-black bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 shadow-[0_0_25px_rgba(16,185,129,0.4)] transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>I SUBMITTED ➔ PROCEED TO STEP 2 (WHATSAPP)</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
+      )}
 
-        {/* WhatsApp Group Joining Section */}
-        <div className="p-5 sm:p-6 rounded-2xl bg-[#25D366]/10 border-2 border-[#25D366]/50 shadow-[0_0_35px_rgba(37,211,102,0.25)] text-left space-y-4">
-          <div className="flex items-start justify-between gap-3">
+      {/* ================= TAB 2: WHATSAPP GROUP (MANDATORY) ================= */}
+      {activeTab === 'whatsapp' && (
+        <div className="rounded-3xl bg-neutral-900/95 border-2 border-[#25D366]/50 p-5 sm:p-7 shadow-2xl backdrop-blur-md text-left flex flex-col space-y-5">
+          <div className="flex items-start justify-between gap-3 pb-3 border-b border-white/10">
             <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#25D366]/20 border border-[#25D366]/40 text-[#25D366] text-xs font-mono font-bold uppercase tracking-wider mb-2">
-                <span>📲 OFFICIAL COMMUNITY</span>
+              <div className="text-[10px] font-mono uppercase tracking-widest text-[#25D366] font-bold mb-1">
+                TAB 2 OF 2 · MANDATORY STEP
               </div>
-              <h4 className="text-xl sm:text-2xl font-black text-white font-display flex items-center gap-2">
+              <h2 className="text-xl sm:text-2xl font-black text-white font-display flex items-center gap-2">
                 <span>📲 JOIN OUR WHATSAPP GROUP 🚀</span>
-              </h4>
-              <p className="text-sm sm:text-base font-semibold text-emerald-300 mt-1">
+              </h2>
+              <p className="text-sm font-semibold text-emerald-300 mt-1">
                 Stay connected with AI ARENA 🤖🔥
               </p>
             </div>
-            <span className="text-3xl sm:text-4xl shrink-0">💬</span>
+            <span className="text-4xl shrink-0">💬</span>
           </div>
 
-          <div className="p-4 rounded-xl bg-neutral-950/80 border border-neutral-800 text-xs sm:text-sm text-neutral-200 space-y-2 font-medium">
-            <span className="text-xs font-mono uppercase tracking-wider text-neutral-400 block font-bold mb-1.5">
+          {/* Group benefits list verbatim */}
+          <div className="p-4 rounded-2xl bg-neutral-950/80 border border-neutral-800 text-xs sm:text-sm text-neutral-200 space-y-2.5 font-medium">
+            <span className="text-xs font-mono uppercase tracking-wider text-neutral-400 block font-bold">
               Get updates about:
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-neutral-300">
@@ -439,7 +370,7 @@ Take the test to discover your AI career roadmap!`;
             </div>
           </div>
 
-          {/* Join WhatsApp Group Button */}
+          {/* Join WhatsApp Button */}
           <div className="space-y-2">
             <div className="text-xs font-mono text-neutral-300 font-semibold flex items-center gap-1.5">
               <span>👉 Click below to join:</span>
@@ -448,8 +379,8 @@ Take the test to discover your AI career roadmap!`;
               href={WHATSAPP_GROUP_URL}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => sounds.playSelect()}
-              className="group w-full py-4 px-6 rounded-xl font-black text-base text-black bg-[#25D366] hover:bg-[#20bd5a] shadow-[0_0_25px_rgba(37,211,102,0.45)] hover:shadow-[0_0_40px_rgba(37,211,102,0.7)] transform hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3 cursor-pointer no-underline"
+              onClick={handleJoinWhatsApp}
+              className="group w-full py-4 px-6 rounded-2xl font-black text-base text-black bg-[#25D366] hover:bg-[#20bd5a] shadow-[0_0_30px_rgba(37,211,102,0.45)] hover:shadow-[0_0_45px_rgba(37,211,102,0.7)] transform hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3 cursor-pointer no-underline"
             >
               <span className="text-xl">💬</span>
               <span>JOIN AI ARENA WHATSAPP GROUP 🚀</span>
@@ -460,55 +391,110 @@ Take the test to discover your AI career roadmap!`;
           <p className="text-center text-xs font-mono text-emerald-400 font-bold tracking-wide">
             See you inside! 🚀
           </p>
+
+          {/* Tab 2 Navigation Action Footer */}
+          <div className="pt-3 border-t border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => setActiveTab('form')}
+              className="text-xs font-mono text-neutral-400 hover:text-white flex items-center gap-1.5"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back to Tab 1</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleCompleteStep2}
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl font-black text-sm text-black bg-gradient-to-r from-emerald-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 shadow-[0_0_25px_rgba(16,185,129,0.4)] transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>I&apos;VE JOINED ➔ PROCEED TO ENTER GAME</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
+      )}
 
-        {/* Direct Action Form */}
-        <form onSubmit={handleFinalUnlock} className="space-y-4">
-          {/* Primary View Roadmap Button */}
-          <button
-            type="submit"
-            className="group relative w-full py-4 sm:py-5 px-6 rounded-xl font-extrabold text-base sm:text-lg text-black bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 shadow-[0_0_35px_rgba(16,185,129,0.45)] hover:shadow-[0_0_55px_rgba(16,185,129,0.7)] transform hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3 cursor-pointer"
-          >
-            <Sparkles className="w-5 h-5 text-black" />
-            <span>I SUBMITTED THE FORM → VIEW MY ROADMAP NOW 🚀</span>
-            <ArrowRight className="w-5 h-5 text-black group-hover:translate-x-1.5 transition-transform" />
-          </button>
-        </form>
+      {/* ================= TAB 3: READY TO ENTER GAME ================= */}
+      {activeTab === 'ready' && (
+        <div className="rounded-3xl bg-neutral-900/95 border-2 border-cyan-400/60 p-6 sm:p-10 shadow-[0_0_50px_rgba(6,182,212,0.25)] backdrop-blur-md text-center space-y-6">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-cyan-400/15 border border-cyan-400/40 flex items-center justify-center text-cyan-400 shadow-[0_0_30px_rgba(6,182,212,0.3)]">
+            <Sparkles className="w-8 h-8" />
+          </div>
 
-        {/* Secondary: Quick Link to Re-open Google Form */}
-        <div className="pt-2 border-t border-neutral-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-          <span className="text-neutral-400 text-xs">
-            Haven&apos;t opened the Google Form yet?
-          </span>
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-mono font-bold uppercase">
+              <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+              <span>ALL MANDATORY REQUIREMENTS VERIFIED</span>
+            </div>
+            <h2 className="text-2xl sm:text-4xl font-black text-white font-display">
+              You are Ready to Enter the Arena! 🚀
+            </h2>
+            <p className="text-xs sm:text-sm text-neutral-300 max-w-md mx-auto">
+              5 questions · 30 seconds · Discover your unique AI Archetype and reveal your full AI Career Roadmap.
+            </p>
+          </div>
+
+          {/* Verification Badges Summary */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md mx-auto text-left font-mono text-xs">
+            <div className="p-3 rounded-xl bg-neutral-950/80 border border-emerald-500/40 text-emerald-300 flex items-center gap-2.5">
+              <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Tab 1: Google Form Verified</span>
+            </div>
+            <div className="p-3 rounded-xl bg-neutral-950/80 border border-emerald-500/40 text-emerald-300 flex items-center gap-2.5">
+              <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Tab 2: WhatsApp Joined</span>
+            </div>
+          </div>
+
+          {/* Final Enter Game Button */}
           <button
             type="button"
-            onClick={handleOpenGoogleForm}
-            className="inline-flex items-center gap-1.5 text-xs font-mono font-semibold text-cyan-400 hover:text-cyan-300 hover:underline cursor-pointer"
+            onClick={handleEnterGame}
+            className="group relative w-full py-5 px-8 rounded-2xl font-black text-lg sm:text-xl text-black bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 shadow-[0_0_40px_rgba(16,185,129,0.5)] hover:shadow-[0_0_60px_rgba(16,185,129,0.8)] transform hover:-translate-y-1 active:translate-y-0 transition-all flex items-center justify-center gap-3 cursor-pointer overflow-hidden"
           >
-            <span>Open Google Form</span>
-            <ExternalLink className="w-3.5 h-3.5" />
+            <Sparkles className="w-6 h-6 text-black" />
+            <span>🎮 START 30-SEC AI PERSONALITY TEST NOW ⚡</span>
+            <ArrowRight className="w-6 h-6 text-black group-hover:translate-x-2 transition-transform" />
           </button>
-        </div>
 
-        {/* Security badge & Stall Contact */}
-        <div className="space-y-2 pt-2">
-          <div className="p-3 rounded-xl bg-neutral-950/70 border border-neutral-800 text-[11px] font-mono text-neutral-400 flex items-center gap-2 justify-center">
-            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>Official Google Form Security · Instant Responses directly to Booth</span>
-          </div>
-
-          <div className="text-center">
-            <a
-              href={getWhatsAppContactUrl('Hi, I am at the AI Arena stall booth and need assistance with the registration form.')}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs text-neutral-400 hover:text-emerald-400 transition-colors font-mono"
+          <div className="flex items-center justify-between text-xs text-neutral-500 font-mono pt-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab('whatsapp')}
+              className="hover:text-white"
             >
-              <Phone className="w-3 h-3 text-emerald-400" />
-              <span>Need help at booth? WhatsApp Coordinator: <strong className="text-white hover:underline">{FORMATTED_CONTACT_PHONE}</strong></span>
-            </a>
+              ← Review WhatsApp
+            </button>
+            <button
+              type="button"
+              onClick={onBack}
+              className="hover:text-white"
+            >
+              Back to Home
+            </button>
           </div>
         </div>
+      )}
+
+      {/* Booth Coordinator Contact in Footer */}
+      <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-neutral-500 font-mono">
+        <button
+          type="button"
+          onClick={onBack}
+          className="hover:text-white transition-colors"
+        >
+          ← Restart / Back to Home
+        </button>
+        <a
+          href={getWhatsAppContactUrl('Hi, I am at the AI Arena booth and need help.')}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:text-emerald-400 transition-colors inline-flex items-center gap-1.5"
+        >
+          <Phone className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Booth Help: {FORMATTED_CONTACT_PHONE}</span>
+        </a>
       </div>
     </div>
   );

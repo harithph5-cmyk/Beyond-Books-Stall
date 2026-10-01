@@ -53,11 +53,15 @@ export default function App() {
     setStage('start');
   };
 
-  // Start the Quiz
+  // Start the Quiz -> Mandatory Google Form & WhatsApp first!
   const handleStart = () => {
     setAnswers({});
     setCurrentQuestionIndex(0);
-    setStage('quiz');
+    if (!currentLead) {
+      setStage('form');
+    } else {
+      setStage('quiz');
+    }
   };
 
   // User selects an option
@@ -102,25 +106,30 @@ export default function App() {
     saveCurrentParticipant(newLead);
     setCurrentLead(newLead);
 
-    // Trigger victory fanfare & confetti explosion!
-    sounds.playFanfare();
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ['#10B981', '#06B6D4', '#F59E0B', '#EC4899', '#8B5CF6']
-    });
-
-    setStage('roadmap');
+    // If answers are empty, user just completed mandatory registration -> enter the game!
+    if (Object.keys(answers).length === 0) {
+      sounds.playCelebration();
+      setStage('quiz');
+    } else {
+      // Completed post-quiz registration -> view roadmap
+      sounds.playFanfare();
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#10B981', '#06B6D4', '#F59E0B', '#EC4899', '#8B5CF6']
+      });
+      setStage('roadmap');
+    }
   };
 
   // Stage progress percentage calculation for subtle top progress line
   const stageProgressMap: Record<AppStage, number> = {
-    start: 10,
-    quiz: 20 + ((currentQuestionIndex + 1) / QUESTIONS.length) * 35, // 20% to 55%
-    analyzing: 65,
-    teaser: 75,
-    form: 88,
+    start: 5,
+    form: 15,
+    quiz: 25 + ((currentQuestionIndex + 1) / QUESTIONS.length) * 45, // 25% to 70%
+    analyzing: 80,
+    teaser: 90,
     roadmap: 100
   };
 
@@ -258,7 +267,8 @@ export default function App() {
             >
               <TeaserScreen
                 persona={detectedPersona}
-                onUnlock={() => setStage('form')}
+                isRegistered={!!currentLead}
+                onUnlock={() => setStage(currentLead ? 'roadmap' : 'form')}
               />
             </motion.div>
           )}
@@ -275,7 +285,8 @@ export default function App() {
               <LeadCaptureScreen
                 persona={detectedPersona}
                 onSubmitLead={handleSubmitLead}
-                onBack={() => setStage('teaser')}
+                onBack={() => setStage(Object.keys(answers).length > 0 ? 'teaser' : 'start')}
+                isPreGame={Object.keys(answers).length === 0}
               />
             </motion.div>
           )}

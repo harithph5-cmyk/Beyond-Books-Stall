@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, ArrowDown, Sparkles, ExternalLink, X, Check, Copy, CheckCircle } from 'lucide-react';
+import { Lock, ArrowDown, ArrowRight, Sparkles, ExternalLink, X, Check, Copy, CheckCircle } from 'lucide-react';
 import { Persona } from '../types';
 import { sounds } from '../utils/audio';
 import { GOOGLE_FORM_DIRECT_URL, GOOGLE_FORM_EMBED_URL } from '../utils/storage';
@@ -8,6 +8,7 @@ import { PersonaIllustration } from './PersonaIllustrations';
 interface TeaserScreenProps {
   persona: Persona;
   onUnlock: () => void;
+  isRegistered?: boolean;
 }
 
 const ROADMAP_STEPS_OVERVIEW = [
@@ -19,7 +20,7 @@ const ROADMAP_STEPS_OVERVIEW = [
   'CAREER OPTIONS'
 ];
 
-export const TeaserScreen: React.FC<TeaserScreenProps> = ({ persona, onUnlock }) => {
+export const TeaserScreen: React.FC<TeaserScreenProps> = ({ persona, onUnlock, isRegistered = false }) => {
   const [showFormModal, setShowFormModal] = useState(false);
   const [iframeLoadCount, setIframeLoadCount] = useState(0);
   const [copiedPersona, setCopiedPersona] = useState(false);
@@ -167,19 +168,22 @@ export const TeaserScreen: React.FC<TeaserScreenProps> = ({ persona, onUnlock })
         </p>
       </div>
 
-      {/* CTA: 🔓 UNLOCK MY AI CAREER ROADMAP (Opens Google Form Modal / Tab) */}
+      {/* CTA: Reveal or Unlock */}
       <button
-        onClick={handleOpenModal}
+        onClick={isRegistered ? () => {
+          sounds.playCelebration();
+          onUnlock();
+        } : handleOpenModal}
         className="group relative inline-flex items-center justify-center gap-3 px-8 sm:px-12 py-4 sm:py-5 rounded-2xl text-lg sm:text-xl font-black text-black bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 shadow-[0_0_35px_rgba(16,185,129,0.45)] hover:shadow-[0_0_55px_rgba(16,185,129,0.7)] transform hover:-translate-y-1 active:translate-y-0 transition-all duration-200 cursor-pointer overflow-hidden border border-emerald-300/40"
       >
         <span className="relative z-10 flex items-center gap-2.5">
-          <span>🔓 REGISTER ON GOOGLE FORM & UNLOCK ROADMAP</span>
-          <ExternalLink className="w-5 h-5 transition-transform duration-200 group-hover:translate-x-1 group-hover:-translate-y-0.5" />
+          <span>{isRegistered ? '🔓 REVEAL MY FULL AI CAREER ROADMAP 🚀' : '🔓 REGISTER ON GOOGLE FORM & UNLOCK ROADMAP'}</span>
+          <ArrowRight className="w-5 h-5 transition-transform duration-200 group-hover:translate-x-1" />
         </span>
       </button>
 
       <p className="text-xs font-mono text-emerald-400/90 mt-3 flex items-center justify-center gap-1.5">
-        <span>⚡ Submit in Google Form to instantly reveal Roadmap</span>
+        <span>{isRegistered ? '✅ Registration verified · Instant Full Reveal' : '⚡ Submit in Google Form to instantly reveal Roadmap'}</span>
       </p>
 
       {/* Embedded Google Form Sheet Modal */}
