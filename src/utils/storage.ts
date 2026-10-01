@@ -3,6 +3,7 @@ import { LeadData } from '../types';
 export const GOOGLE_FORM_URL = 'https://forms.gle/yS7NSGmn1yDsuvRz7';
 export const GOOGLE_FORM_DIRECT_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSehn1PZqg55Gg3zys3WDR_y9D9Eg7X_tQLgyLCVZOWTc3njIw/viewform?usp=send_form';
 export const GOOGLE_FORM_EMBED_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSehn1PZqg55Gg3zys3WDR_y9D9Eg7X_tQLgyLCVZOWTc3njIw/viewform?embedded=true';
+export const WHATSAPP_GROUP_URL = 'https://chat.whatsapp.com/BaqZ791UJqCLO40zeL9NRo?mode=gi_t';
 export const DEFAULT_CONTACT_PHONE = '9940411837';
 export const FORMATTED_CONTACT_PHONE = '+91 99404 11837';
 

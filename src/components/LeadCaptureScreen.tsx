@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { Persona } from '../types';
 import { sounds } from '../utils/audio';
-import { GOOGLE_FORM_URL, FORMATTED_CONTACT_PHONE, getWhatsAppContactUrl } from '../utils/storage';
+import { GOOGLE_FORM_URL, FORMATTED_CONTACT_PHONE, getWhatsAppContactUrl, WHATSAPP_GROUP_URL } from '../utils/storage';
 import { PersonaIllustration } from './PersonaIllustrations';
 import { PERSONA_THEMES } from './RoadmapScreen';
 
@@ -394,25 +394,76 @@ Take the test to discover your AI career roadmap!`;
           </div>
         </div>
 
-        {/* Direct Action Form */}
-        <form onSubmit={handleFinalUnlock} className="space-y-4">
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-mono font-semibold tracking-wider text-neutral-300 uppercase flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5 text-emerald-400" />
-                <span>NAME FOR ROADMAP CERTIFICATE (OPTIONAL)</span>
-              </label>
-              <span className="text-[11px] font-mono text-neutral-500">Auto-filled if skipped</span>
+        {/* WhatsApp Group Joining Section */}
+        <div className="p-5 sm:p-6 rounded-2xl bg-[#25D366]/10 border-2 border-[#25D366]/50 shadow-[0_0_35px_rgba(37,211,102,0.25)] text-left space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#25D366]/20 border border-[#25D366]/40 text-[#25D366] text-xs font-mono font-bold uppercase tracking-wider mb-2">
+                <span>📲 OFFICIAL COMMUNITY</span>
+              </div>
+              <h4 className="text-xl sm:text-2xl font-black text-white font-display flex items-center gap-2">
+                <span>📲 JOIN OUR WHATSAPP GROUP 🚀</span>
+              </h4>
+              <p className="text-sm sm:text-base font-semibold text-emerald-300 mt-1">
+                Stay connected with AI ARENA 🤖🔥
+              </p>
             </div>
-            <input
-              type="text"
-              value={attendeeName}
-              onChange={(e) => setAttendeeName(e.target.value)}
-              placeholder="Enter your name (e.g. Alex) or leave blank"
-              className="w-full px-4 py-3.5 rounded-xl bg-neutral-950/90 border border-neutral-700/80 focus:border-emerald-400 text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all text-sm font-medium"
-            />
+            <span className="text-3xl sm:text-4xl shrink-0">💬</span>
           </div>
 
+          <div className="p-4 rounded-xl bg-neutral-950/80 border border-neutral-800 text-xs sm:text-sm text-neutral-200 space-y-2 font-medium">
+            <span className="text-xs font-mono uppercase tracking-wider text-neutral-400 block font-bold mb-1.5">
+              Get updates about:
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-neutral-300">
+              <div className="flex items-center gap-2">
+                <span className="text-[#25D366] font-bold">✦</span>
+                <span>AI Workshops</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[#25D366] font-bold">✦</span>
+                <span>Internships</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[#25D366] font-bold">✦</span>
+                <span>Career Opportunities</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[#25D366] font-bold">✦</span>
+                <span>Events &amp; Activities</span>
+              </div>
+              <div className="flex items-center gap-2 sm:col-span-2">
+                <span className="text-[#25D366] font-bold">✦</span>
+                <span>Exclusive Updates</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Join WhatsApp Group Button */}
+          <div className="space-y-2">
+            <div className="text-xs font-mono text-neutral-300 font-semibold flex items-center gap-1.5">
+              <span>👉 Click below to join:</span>
+            </div>
+            <a
+              href={WHATSAPP_GROUP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => sounds.playSelect()}
+              className="group w-full py-4 px-6 rounded-xl font-black text-base text-black bg-[#25D366] hover:bg-[#20bd5a] shadow-[0_0_25px_rgba(37,211,102,0.45)] hover:shadow-[0_0_40px_rgba(37,211,102,0.7)] transform hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3 cursor-pointer no-underline"
+            >
+              <span className="text-xl">💬</span>
+              <span>JOIN AI ARENA WHATSAPP GROUP 🚀</span>
+              <ExternalLink className="w-5 h-5 text-black group-hover:translate-x-1 group-hover:-translate-y-0.5 transition-transform" />
+            </a>
+          </div>
+
+          <p className="text-center text-xs font-mono text-emerald-400 font-bold tracking-wide">
+            See you inside! 🚀
+          </p>
+        </div>
+
+        {/* Direct Action Form */}
+        <form onSubmit={handleFinalUnlock} className="space-y-4">
           {/* Primary View Roadmap Button */}
           <button
             type="submit"
