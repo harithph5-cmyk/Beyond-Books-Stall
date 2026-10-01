@@ -6,7 +6,6 @@ import {
   Eye,
   EyeOff,
   ShieldAlert,
-  KeyRound,
   ExternalLink,
   Sheet,
   Check,
@@ -199,21 +198,6 @@ export const StallLeadsModal: React.FC<StallLeadsModalProps> = ({
               <span>Unlock Organizer Desk</span>
             </button>
           </form>
-
-          {/* Organizer hint */}
-          <div className="mt-5 p-3 rounded-lg bg-neutral-950/80 border border-neutral-800/80 text-[11px] font-mono text-neutral-400 flex items-center justify-between">
-            <span className="flex items-center gap-1.5 text-neutral-500">
-              <KeyRound className="w-3.5 h-3.5 text-amber-400" />
-              Passcode:
-            </span>
-            <span className="font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-              arena2026
-            </span>
-            <span className="text-neutral-500">or PIN:</span>
-            <span className="font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-              8888
-            </span>
-          </div>
         </div>
       ) : (
         /* Authenticated -> Organizer Google Forms Lead Desk */
